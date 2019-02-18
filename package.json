@@ -1,0 +1,13 @@
+{
+    "name": "yacs-server",
+    "description": "Standard implementation for the YACS backend",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/yacsorg/yacs-server"
+    },
+    "version": "0.0.1",
+    "dependencies": {
+        "express": "4.16.4",
+        "pg": "^7.8.0"
+    }
+}
