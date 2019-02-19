@@ -1,9 +1,9 @@
 {
-    "name": "yacs-server",
+    "name": "warbler-server",
     "description": "Standard implementation for the YACS backend",
     "repository": {
         "type": "git",
-        "url": "https://github.com/yacsorg/yacs-server"
+        "url": "https://github.com/warblerorg/warbler-server"
     },
     "version": "0.0.1",
     "dependencies": {
