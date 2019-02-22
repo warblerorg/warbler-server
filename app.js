@@ -24,9 +24,10 @@ app.get('/v1/comment/:id', async (req, res, next) => {
         res.status(500).send("Internal error.");
     }
 });
+
 app.post('/v1/comment', async (req, res, next) => {
     try {
-        const queryResult = await pool.query("INSERT INTO comments(thread_id, parent_id, user_id, content), VALUES($1, $2, $3, $4)", 
+        const queryResult = await pool.query("INSERT INTO comments(thread_id, parent_id, user_id, content) VALUES($1, $2, $3, $4)", 
             [
                 req.body["thread_id"],
                 req.body["parent_id"],
@@ -42,7 +43,6 @@ app.post('/v1/comment', async (req, res, next) => {
 });
 //app.put('/v1/comment')
 //app.delete('/v1/comment/:id')
-
 //app.post('/v1/login')
 
 app.get('/v1/thread/:id', async (req, res, next) => {
@@ -61,7 +61,15 @@ app.get('/v1/thread/:id', async (req, res, next) => {
         res.status(500).send("Internal error.");
     }
 });
-//app.post('/v1/thread')
+app.post('/v1/thread', async (req, res, next) => {
+    try {
+        const queryResult = await pool.query("INSERT INTO threads(id) VALUES($1)", [req.body["thread_id"]]);
+        res.json(queryResult.rows[0]);
+    } catch(err) {
+        console.log(err);
+        res.status(500).send(`Internal error inserting: ${err.stack}`);
+    }
+});
 //app.put('/v1/thread')
 //app.delete('/v1/thread/:id')
 
@@ -81,7 +89,22 @@ app.get('/v1/user/:id', async (req, res, next) => {
         res.status(500).send("Internal error.");
     }
 });
-//app.post('/v1/user')
+app.post('/v1/user', async (req, res, next) => {
+    try {
+        const queryResult = await pool.query("INSERT INTO users(email_or_id, display_name, website, encrypted_password) VALUES($1, $2, $3, $4)", 
+            [
+                req.body["email_or_id"],
+                req.body["display_name"],
+                req.body["website"],
+                req.body["encrypted_password"]
+            ]
+        );
+        res.json(queryResult.rows[0]);
+    } catch(err) {
+        console.log(err);
+        res.status(500).send(`Internal error inserting: ${err.stack}`);
+    }
+});
 //app.put('/v1/user')
 //app.delete('/v1/user/:id')
 
