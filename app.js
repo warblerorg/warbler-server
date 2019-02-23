@@ -1,8 +1,11 @@
 const express = require('express');
+
 const { Pool, Client } = require('pg');
 
-const pool = new Pool();
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
 
+const pool = new Pool();
 const app = express();
 const port = 3000;
 
