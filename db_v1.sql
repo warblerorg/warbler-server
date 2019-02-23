@@ -6,7 +6,7 @@ CREATE TABLE users(
     email_or_id VARCHAR(512) PRIMARY KEY,
     display_name VARCHAR(512),
     website VARCHAR(512),
-    encrypted_password BLOB
+    encrypted_password bytea,
 );
 
 
