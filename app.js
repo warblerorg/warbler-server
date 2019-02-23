@@ -5,9 +5,28 @@ const { Pool, Client } = require('pg');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 
+const user_validation_local = require('./src/user_validation_local.js');
+
 const pool = new Pool();
 const app = express();
 const port = 3000;
+
+// Passport configuration
+
+passport.use(new LocalStrategy(
+    async function(email_or_id, password, done) {
+        const queryResult = await pool.query("SELECT * FROM users WHERE email_or_id=$1", [email_or_id]);
+        if (queryResult.rows.length == 0) {
+            return done(null, false, { message: 'Incorrect username.' });
+        }
+        const validUser = await user_validation_local.validateUser(password, queryResult.rows[0]);
+        if (!validUser) {
+            return done(null, false, { message: 'Incorrect password.' });
+        } 
+        return done(null, queryResult.rows[0]);
+    }
+));
+
 
 app.get('/', async (req, res) => res.send("Hello world!"));
 
@@ -94,7 +113,7 @@ app.get('/v1/user/:id', async (req, res, next) => {
 });
 app.post('/v1/user', async (req, res, next) => {
     try {
-        const queryResult = await pool.query("INSERT INTO users(email_or_id, display_name, website, encrypted_password) VALUES($1, $2, $3, $4)", 
+        const queryResult = await pool.query("INSERT INTO users(email_or_id, display_name, website, encrypted_password) VALUES($1, $2, $3, $4)",
             [
                 req.body["email_or_id"],
                 req.body["display_name"],
