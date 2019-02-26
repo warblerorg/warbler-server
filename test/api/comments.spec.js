@@ -18,13 +18,13 @@ describe('GET /comments/{thread_id}', () => {
     // TODO mock the existing thread
 
     test('should have 404 status for unknown thread', async () => {
-        await request(server)
+        await request(app)
             .get(`/v1/comments/${fakeThreadId}`)
             .expect(404);
     });
 
     test('should have 200 status for known thread', async () => {
-        const res = await request(server)
+        const res = await request(app)
             .get(`/v1/comments/${exitingThreadId}`)
             .expect('Content-Type', /json/)
             .expect(200);
@@ -38,7 +38,7 @@ describe('POST /comments/{thread_id}', () => {
     // TODO mock the existing thread
 
     test('should have 404 status for unknown thread', async () => {
-        await request(server)
+        await request(app)
             .post(`/v1/comments/${fakeThreadId}`)
             .send('Hello world')
             .set('Content-Type', 'text/plain')
@@ -47,7 +47,7 @@ describe('POST /comments/{thread_id}', () => {
     });
 
     test('should have 401 status for no authorization', async () => {
-        await request(server)
+        await request(app)
             .post(`/v1/comments/${exitingThreadId}`)
             .send('Hello world')
             .set('Content-Type', 'text/plain')
@@ -63,7 +63,7 @@ describe('POST /comments/{thread_id}', () => {
 
         for (const [type, content] of commentTypes) {
             test(`should accept ${type}`, async () => {
-                const res = await request(server)
+                const res = await request(app)
                     .post(`/v1/comments/${exitingThreadId}`)
                     .set('Content-Type', type)
                     .set('Authorization', bearer)
@@ -81,7 +81,7 @@ describe('POST /comments/{thread_id}', () => {
     });
 
     describe('should convert markdown', async () => {
-        const res = await request(server)
+        const res = await request(app)
             .post(`/v1/comments/${exitingThreadId}`)
             .set('Content-Type', 'text/plain')
             .set('Authorization', bearer)
@@ -91,7 +91,7 @@ describe('POST /comments/{thread_id}', () => {
     });
 
     describe('should remove XSS vectors', async () => {
-        const res = await request(server)
+        const res = await request(app)
             .post(`/v1/comments/${exitingThreadId}`)
             .set('Content-Type', 'text/plain')
             .set('Authorization', bearer)
@@ -107,7 +107,7 @@ describe('PUT /comments/{thread_id}/{comment_id}', () => {
     // TODO mock the existing thread
 
     test('should have 404 status for unknown thread', async () => {
-        await request(server)
+        await request(app)
             .put(`/v1/comments/${fakeThreadId}/0`)
             .send('Hello world')
             .set('Content-Type', 'text/plain')
@@ -116,7 +116,7 @@ describe('PUT /comments/{thread_id}/{comment_id}', () => {
     });
 
     test('should have 404 status for unknown comment', async () => {
-        await request(server)
+        await request(app)
             .put(`/v1/comments/${fakeCommentId}`)
             .send('Hello world')
             .set('Content-Type', 'text/plain')
@@ -125,7 +125,7 @@ describe('PUT /comments/{thread_id}/{comment_id}', () => {
     });
 
     test('should have 401 status for no authorization', async () => {
-        await request(server)
+        await request(app)
             .put(`/v1/comments/${existingCommentId}`)
             .send('Hello world')
             .set('Content-Type', 'text/plain')
@@ -141,7 +141,7 @@ describe('PUT /comments/{thread_id}/{comment_id}', () => {
 
         for (const [type, content] of commentTypes) {
             test(`should accept ${type}`, async () => {
-                const res = await request(server)
+                const res = await request(app)
                     .put(`/v1/comments/${existingCommentId}`)
                     .set('Content-Type', type)
                     .set('Authorization', bearer)
@@ -159,7 +159,7 @@ describe('PUT /comments/{thread_id}/{comment_id}', () => {
     });
 
     describe('should convert markdown', async () => {
-        const res = await request(server)
+        const res = await request(app)
             .put(`/v1/comments/${existingCommentId}`)
             .set('Content-Type', 'text/plain')
             .set('Authorization', bearer)
@@ -169,7 +169,7 @@ describe('PUT /comments/{thread_id}/{comment_id}', () => {
     });
 
     describe('should remove XSS vectors', async () => {
-        const res = await request(server)
+        const res = await request(app)
             .put(`/v1/comments/${existingCommentId}`)
             .set('Content-Type', 'text/plain')
             .set('Authorization', bearer)
@@ -185,7 +185,7 @@ describe('DELETE /comments/{thread_id}/{comment_id}', () => {
     // TODO mock the existing thread
 
     test('should have 404 status for unknown thread', async () => {
-        await request(server)
+        await request(app)
             .delete(`/v1/comments/${fakeThreadId}/0`)
             .set('Content-Type', 'text/plain')
             .set('Authorization', bearer)
@@ -193,7 +193,7 @@ describe('DELETE /comments/{thread_id}/{comment_id}', () => {
     });
 
     test('should have 404 status for unknown comment', async () => {
-        await request(server)
+        await request(app)
             .delete(`/v1/comments/${fakeCommentId}`)
             .set('Content-Type', 'text/plain')
             .set('Authorization', bearer)
@@ -201,14 +201,14 @@ describe('DELETE /comments/{thread_id}/{comment_id}', () => {
     });
 
     test('should have 401 status for no authorization', async () => {
-        await request(server)
+        await request(app)
             .put(`/v1/comments/${existingCommentId}`)
             .set('Content-Type', 'text/plain')
             .expect(401);
     });
 
     describe('should delete comment', async () => {
-        await request(server)
+        await request(app)
             .put(`/v1/comments/${exitingThreadId}/4321`)
             .set('Content-Type', 'text/plain')
             .set('Authorization', bearer)
