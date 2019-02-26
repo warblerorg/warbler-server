@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { server } = require('../../app');
+const { app } = require('../../app');
 
 const exitingThreadId = 'existing-12ad3';
 const fakeThreadId = 'does-not-exist-935sr';

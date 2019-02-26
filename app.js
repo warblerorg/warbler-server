@@ -7,7 +7,6 @@ const LocalStrategy = require('passport-local').Strategy;
 
 const pool = new Pool();
 const app = express();
-const port = 3000;
 
 app.get('/', async (req, res) => res.send("Hello world!"));
 
@@ -111,7 +110,4 @@ app.post('/v1/user', async (req, res, next) => {
 //app.put('/v1/user')
 //app.delete('/v1/user/:id')
 
-
-app.listen(port, () => console.log(`Example app listening on port ${port}.`));
-
-exports.server = app;
+exports.app = app;
