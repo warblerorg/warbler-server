@@ -30,7 +30,7 @@ app.get('/v1/comment/:id', async (req, res, next) => {
 
 app.post('/v1/comment', async (req, res, next) => {
     try {
-        const queryResult = await pool.query("INSERT INTO comments(thread_id, parent_id, user_id, content) VALUES($1, $2, $3, $4)", 
+        const queryResult = await pool.query("INSERT INTO comments(thread_id, parent_id, user_id, content) VALUES($1, $2, $3, $4)",
             [
                 req.body["thread_id"],
                 req.body["parent_id"],
@@ -94,7 +94,7 @@ app.get('/v1/user/:id', async (req, res, next) => {
 });
 app.post('/v1/user', async (req, res, next) => {
     try {
-        const queryResult = await pool.query("INSERT INTO users(email_or_id, display_name, website, encrypted_password) VALUES($1, $2, $3, $4)", 
+        const queryResult = await pool.query("INSERT INTO users(email_or_id, display_name, website, encrypted_password) VALUES($1, $2, $3, $4)",
             [
                 req.body["email_or_id"],
                 req.body["display_name"],
@@ -113,3 +113,5 @@ app.post('/v1/user', async (req, res, next) => {
 
 
 app.listen(port, () => console.log(`Example app listening on port ${port}.`));
+
+exports.server = app;
