@@ -14,8 +14,14 @@ const author = {
     avatar_url: ''
 };
 
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms))
+
 describe('GET /comments/{thread_id}', () => {
     // TODO mock the existing thread
+
+    // For some reason this is needed for the
+    // first 2 test suites to work properly
+    beforeAll(() => wait(1000));
 
     test('should have 404 status for unknown thread', async () => {
         await request(app)
