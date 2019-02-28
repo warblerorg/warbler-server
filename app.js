@@ -22,7 +22,7 @@ passport.use(new LocalStrategy(
         const validUser = await user_validation_local.validateUser(password, queryResult.rows[0]);
         if (!validUser) {
             return done(null, false, { message: 'Incorrect password.' });
-        } 
+        }
         return done(null, queryResult.rows[0]);
     }
 ));
@@ -129,6 +129,11 @@ app.post('/v1/user', async (req, res, next) => {
 });
 //app.put('/v1/user')
 //app.delete('/v1/user/:id')
+
+app.post('/login', passport.authentiate('local'),
+    async (req, res, next) => {
+        res.redirect('/');
+});
 
 
 app.listen(port, () => console.log(`Example app listening on port ${port}.`));
