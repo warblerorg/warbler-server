@@ -11,22 +11,48 @@ const pool = new Pool();
 const app = express();
 const port = 3000;
 
+// middleware stuff
+
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const cookieSession = require('cookie-session');
+
+app.use(bodyParser());
+app.use(cookieParser());
+app.use(cookieSession({
+    name: 'session',
+    keys: ['asdf']
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Passport configuration
 
 passport.use(new LocalStrategy(
     async function(email_or_id, password, done) {
-        const queryResult = await pool.query("SELECT * FROM users WHERE email_or_id=$1", [email_or_id]);
-        if (queryResult.rows.length == 0) {
-            return done(null, false, { message: 'Incorrect username.' });
+        try {
+            const queryResult = await pool.query("SELECT * FROM users WHERE email_or_id=$1", [email_or_id]);
+            if (queryResult.rows.length == 0) {
+                return done(null, false, { message: 'Incorrect username.' });
+            }
+            const validUser = await user_validation_local.validateUser(password, queryResult.rows[0]);
+            if (!validUser) {
+                return done(null, false, { message: 'Incorrect password.' });
+            }
+            done(null, queryResult.rows[0]);
+        } catch(e) {
+            done(e);
         }
-        const validUser = await user_validation_local.validateUser(password, queryResult.rows[0]);
-        if (!validUser) {
-            return done(null, false, { message: 'Incorrect password.' });
-        }
-        return done(null, queryResult.rows[0]);
     }
 ));
 
+passport.serializeUser(function(user, done) {
+    done(null, user);
+});
+
+passport.deserializeUser(function(user, done) {
+    done(null, user);
+});
 
 app.get('/', async (req, res) => res.send("Hello world!"));
 
@@ -49,23 +75,48 @@ app.get('/v1/comment/:id', async (req, res, next) => {
 
 app.post('/v1/comment', async (req, res, next) => {
     try {
-        const queryResult = await pool.query("INSERT INTO comments(thread_id, parent_id, user_id, content) VALUES($1, $2, $3, $4)", 
-            [
-                req.body["thread_id"],
-                req.body["parent_id"],
-                req.body["user_id"],
-                req.body["content"]
-            ]
-        );
-        res.json(queryResult.rows[0]);
+        let current_user_id = null;
+        if (!!req.user) {
+            current_user_id = req.user["email_or_id"];
+        }
+        if (current_user_id != req.body["user_id"]) {
+            res.status(401).send("Cannot post comment as that user: unauthorized");
+        } else {
+            const queryResult = await pool.query("INSERT INTO comments(thread_id, parent_id, user_id, content) VALUES($1, $2, $3, $4)", 
+                [
+                    req.body["thread_id"],
+                    req.body["parent_id"],
+                    req.body["user_id"],
+                    req.body["content"]
+                ]
+            );
+            res.json(queryResult.rows[0]);
+        }
     } catch(err) {
         console.log(err);
         res.status(500).send("Internal error inserting.");
     }
 });
 //app.put('/v1/comment')
-//app.delete('/v1/comment/:id')
-//app.post('/v1/login')
+app.delete('/v1/comment/:id', async (req, res, next) => {
+    try {
+        const current_user_id = req.user["email_or_id"];
+        const userQueryResult = await pool.query("SELECT user_id FROM comments WHERE comment_id=$1", [ req.params["id"] ]);
+        if (userQueryResult.rows.length == 0) {
+            res.status(404).send(`Cannot find comment with id ${req.params["id"]}`);
+        } else {
+            let valid_user_id = userQueryResult.rows[0]["user_id"];
+            if (current_user_id != valid_user_id) {
+                res.status(401).send("Fnauthorized");
+            } else {
+                res.status(204).send();
+            }
+        }
+    } catch(err) {
+        console.log(err);
+        res.status(500).send("Internal error deleting.");
+    }
+});
 
 app.get('/v1/thread/:id', async (req, res, next) => {
     try {
@@ -113,12 +164,13 @@ app.get('/v1/user/:id', async (req, res, next) => {
 });
 app.post('/v1/user', async (req, res, next) => {
     try {
+        const encryptedPassword = await user_validation_local.encryptPassword(req.body["password"]);
         const queryResult = await pool.query("INSERT INTO users(email_or_id, display_name, website, encrypted_password) VALUES($1, $2, $3, $4)",
             [
                 req.body["email_or_id"],
                 req.body["display_name"],
                 req.body["website"],
-                req.body["encrypted_password"]
+                Buffer(encryptedPassword)
             ]
         );
         res.json(queryResult.rows[0]);
@@ -130,9 +182,9 @@ app.post('/v1/user', async (req, res, next) => {
 //app.put('/v1/user')
 //app.delete('/v1/user/:id')
 
-app.post('/login', passport.authentiate('local'),
+app.post('/login', passport.authenticate('local'),
     async (req, res, next) => {
-        res.redirect('/');
+        res.status(204).send();
 });
 
 
