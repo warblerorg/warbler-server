@@ -1,6 +1,7 @@
 {
     "name": "warbler-server",
     "description": "Standard implementation for the YACS backend",
+    "license": "MIT",
     "repository": {
         "type": "git",
         "url": "https://github.com/warblerorg/warbler-server"
