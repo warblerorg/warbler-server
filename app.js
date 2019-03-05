@@ -9,7 +9,6 @@ const user_validation_local = require('./src/user_validation_local.js');
 
 const pool = new Pool();
 const app = express();
-const port = 3000;
 
 // middleware stuff
 
@@ -187,5 +186,4 @@ app.post('/login', passport.authenticate('local'),
         res.status(204).send();
 });
 
-
-app.listen(port, () => console.log(`Example app listening on port ${port}.`));
+exports.app = app;
