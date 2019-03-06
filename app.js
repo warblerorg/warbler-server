@@ -11,12 +11,12 @@ const pool = new Pool();
 const app = express();
 
 // middleware stuff
-
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const cookieSession = require('cookie-session');
 
-app.use(bodyParser());
+
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(cookieSession({
     name: 'session',
@@ -147,7 +147,7 @@ app.post('/v1/thread', async (req, res, next) => {
 
 app.get('/v1/user/:id', async (req, res, next) => {
     try {
-        const queryResult = await pool.query("SELECT * FROM users WHERE email_or_id=$1", [req.params["id"]]);
+        const queryResult = await pool.query("SELECT email_or_id, display_name, website FROM users WHERE email_or_id=$1", [req.params["id"]]);
         if (queryResult.rows.length == 0) {
             res.status(404).json({
                 "status": "error",
