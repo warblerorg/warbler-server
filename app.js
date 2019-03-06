@@ -81,7 +81,8 @@ app.post('/v1/comment', async (req, res, next) => {
         if (current_user_id != req.body["user_id"]) {
             res.status(401).send("Cannot post comment as that user: unauthorized");
         } else {
-            const queryResult = await pool.query("INSERT INTO comments(thread_id, parent_id, user_id, content) VALUES($1, $2, $3, $4)", 
+            const queryResult = await pool.query("INSERT INTO comments(thread_id, parent_id, user_id, content)" +
+                " VALUES($1, $2, $3, $4)", 
                 [
                     req.body["thread_id"],
                     req.body["parent_id"],
@@ -96,18 +97,41 @@ app.post('/v1/comment', async (req, res, next) => {
         res.status(500).send("Internal error inserting.");
     }
 });
-//app.put('/v1/comment')
+app.put('/v1/comment/:id', async (req, res, next) => {
+    try {
+        let current_user_id = null;
+        if (!!req.user) {
+            current_user_id = req.user["email_or_id"];
+        } else {
+            res.status(401).send("Need to be logged in to update comment.");
+        }
+        const updateQueryResult = await pool.query("UPDATE comments SET content=$1 WHERE comment_id=$2 and user_id=$3",
+            [req.body["content"], req.params["id"], current_user_id]);
+        if (updateQueryResult.rowCount == 0) {
+            res.status(404).send(`Cannot find comment with id ` +
+                `${req.params["id"]} belonging to user ${current_user_id}`);
+        } else {
+            res.status(204).send();
+        }
+    } catch(err) {
+        console.log(err);
+        res.status(500).send("Internal error updating comment.");
+    }
+});
 app.delete('/v1/comment/:id', async (req, res, next) => {
     try {
         const current_user_id = req.user["email_or_id"];
-        const userQueryResult = await pool.query("SELECT user_id FROM comments WHERE comment_id=$1", [ req.params["id"] ]);
+        const userQueryResult = await pool.query("SELECT user_id FROM comments WHERE comment_id=$1", 
+            [req.params["id"]]);
         if (userQueryResult.rows.length == 0) {
             res.status(404).send(`Cannot find comment with id ${req.params["id"]}`);
         } else {
             let valid_user_id = userQueryResult.rows[0]["user_id"];
             if (current_user_id != valid_user_id) {
-                res.status(401).send("Fnauthorized");
+                res.status(401).send("Unauthorized");
             } else {
+                const deleteQueryResult = await pool.query("DELETE FROM comments WHERE comment_id=$1", 
+                    [req.params["id"]]);
                 res.status(204).send();
             }
         }
@@ -147,7 +171,8 @@ app.post('/v1/thread', async (req, res, next) => {
 
 app.get('/v1/user/:id', async (req, res, next) => {
     try {
-        const queryResult = await pool.query("SELECT email_or_id, display_name, website FROM users WHERE email_or_id=$1", [req.params["id"]]);
+        const queryResult = await pool.query(
+            "SELECT email_or_id, display_name, website FROM users WHERE email_or_id=$1", [req.params["id"]]);
         if (queryResult.rows.length == 0) {
             res.status(404).json({
                 "status": "error",
@@ -164,7 +189,8 @@ app.get('/v1/user/:id', async (req, res, next) => {
 app.post('/v1/user', async (req, res, next) => {
     try {
         const encryptedPassword = await user_validation_local.encryptPassword(req.body["password"]);
-        const queryResult = await pool.query("INSERT INTO users(email_or_id, display_name, website, encrypted_password) VALUES($1, $2, $3, $4)",
+        const queryResult = await pool.query(
+            "INSERT INTO users(email_or_id, display_name, website, encrypted_password) VALUES($1, $2, $3, $4)",
             [
                 req.body["email_or_id"],
                 req.body["display_name"],
@@ -179,11 +205,32 @@ app.post('/v1/user', async (req, res, next) => {
     }
 });
 //app.put('/v1/user')
-//app.delete('/v1/user/:id')
+app.delete('/v1/user/:id', async (req, res, next) => {
+    try {
+        let current_user_id = null;
+        if (!!req.user) {
+            current_user_id = req.user["email_or_id"];
+        }
+        if (current_user_id != req.body["user_id"]) {
+            res.status(401).send("Cannot delete user as another user: unauthorized");
+        } else {
+            const queryResult = await pool.query("DELETE FROM users WHERE email_or_id=$1", [current_user_id]);
+            req.logout();
+            res.json(queryResult.rows[0]);
+        }
+    } catch(err) {
+        console.log(err);
+        res.status(500).send("Internal error deleting user.");
+    }
+});
 
 app.post('/login', passport.authenticate('local'),
     async (req, res, next) => {
         res.status(204).send();
+});
+app.get('/logout', async (req, res, next) => {
+    req.logout();
+    res.status(204).send();
 });
 
 exports.app = app;
