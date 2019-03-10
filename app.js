@@ -55,7 +55,7 @@ passport.deserializeUser(function(user, done) {
 
 app.get('/', async (req, res) => res.send("Hello world!"));
 
-app.get('/v1/comment/:id', async (req, res, next) => {
+app.get('/v1/comments/:id', async (req, res, next) => {
     try {
         const queryResult = await pool.query("SELECT * FROM comments WHERE comment_id=$1", [req.params["id"]]);
         if (queryResult.rows.length == 0) {
@@ -72,21 +72,33 @@ app.get('/v1/comment/:id', async (req, res, next) => {
     }
 });
 
-app.post('/v1/comment', async (req, res, next) => {
+app.get('/v1/comments/:thread_id', async (req, res, next) => {
+    try {
+        const queryResult = await pool.query("SELECT * FROM comments WHERE thread_id=$1", [req.params["thread_id"]]);
+        res.json(queryResult.rows);
+    } catch(err) {
+        console.log(err);
+        res.status(500).send(`Internal error: ${err.message}`);
+    }
+});
+
+app.post('/v1/comments/:thread_id', async (req, res, next) => {
     try {
         let current_user_id = null;
         if (!!req.user) {
             current_user_id = req.user["email_or_id"];
+        } else {
+            res.status(401).send("Cannot post comment without being logged in.");
         }
         if (current_user_id != req.body["user_id"]) {
-            res.status(401).send("Cannot post comment as that user: unauthorized");
+            res.status(401).send("Unauthorized: cannot post comment as that user");
         } else {
             const queryResult = await pool.query("INSERT INTO comments(thread_id, parent_id, user_id, content)" +
                 " VALUES($1, $2, $3, $4)", 
                 [
-                    req.body["thread_id"],
+                    req.params["thread_id"],
                     req.body["parent_id"],
-                    req.body["user_id"],
+                    current_user_id,
                     req.body["content"]
                 ]
             );
@@ -97,7 +109,7 @@ app.post('/v1/comment', async (req, res, next) => {
         res.status(500).send("Internal error inserting.");
     }
 });
-app.put('/v1/comment/:id', async (req, res, next) => {
+app.put('/v1/comments/:thread_id/:comment_id', async (req, res, next) => {
     try {
         let current_user_id = null;
         if (!!req.user) {
@@ -105,8 +117,8 @@ app.put('/v1/comment/:id', async (req, res, next) => {
         } else {
             res.status(401).send("Need to be logged in to update comment.");
         }
-        const updateQueryResult = await pool.query("UPDATE comments SET content=$1 WHERE comment_id=$2 and user_id=$3",
-            [req.body["content"], req.params["id"], current_user_id]);
+        const updateQueryResult = await pool.query("UPDATE comments SET content=$1 WHERE thread_id=$2 and comment_id=$3 and user_id=$4",
+            [req.body["content"], req.params["thread_id"], req.params["comment_id"], current_user_id]);
         if (updateQueryResult.rowCount == 0) {
             res.status(404).send(`Cannot find comment with id ` +
                 `${req.params["id"]} belonging to user ${current_user_id}`);
@@ -114,14 +126,14 @@ app.put('/v1/comment/:id', async (req, res, next) => {
             res.status(204).send();
         }
     } catch(err) {
-        console.log(err);
+        console.log(err)
         res.status(500).send("Internal error updating comment.");
     }
 });
-app.delete('/v1/comment/:id', async (req, res, next) => {
+app.delete('/v1/comments/:id', async (req, res, next) => {
     try {
         const current_user_id = req.user["email_or_id"];
-        const userQueryResult = await pool.query("SELECT user_id FROM comments WHERE comment_id=$1", 
+        const userQueryResult = await pool.query("SELECT user_id FROM comments WHERE comment_id=$1",
             [req.params["id"]]);
         if (userQueryResult.rows.length == 0) {
             res.status(404).send(`Cannot find comment with id ${req.params["id"]}`);
@@ -130,7 +142,7 @@ app.delete('/v1/comment/:id', async (req, res, next) => {
             if (current_user_id != valid_user_id) {
                 res.status(401).send("Unauthorized");
             } else {
-                const deleteQueryResult = await pool.query("DELETE FROM comments WHERE comment_id=$1", 
+                const deleteQueryResult = await pool.query("DELETE FROM comments WHERE comment_id=$1",
                     [req.params["id"]]);
                 res.status(204).send();
             }
@@ -157,6 +169,7 @@ app.get('/v1/thread/:id', async (req, res, next) => {
         res.status(500).send("Internal error.");
     }
 });
+
 app.post('/v1/thread', async (req, res, next) => {
     try {
         const queryResult = await pool.query("INSERT INTO threads(id) VALUES($1)", [req.body["thread_id"]]);
@@ -195,7 +208,7 @@ app.post('/v1/user', async (req, res, next) => {
                 req.body["email_or_id"],
                 req.body["display_name"],
                 req.body["website"],
-                Buffer(encryptedPassword)
+                Buffer.from(encryptedPassword)
             ]
         );
         res.json(queryResult.rows[0]);
@@ -204,7 +217,35 @@ app.post('/v1/user', async (req, res, next) => {
         res.status(500).send(`Internal error inserting: ${err.stack}`);
     }
 });
-//app.put('/v1/user')
+
+app.put('/v1/user', async (req, res, next) => {
+    try {
+        let current_user_id = null;
+        if (!!req.user) {
+            current_user_id = req.user["email_or_id"];
+        } else {
+            res.status(401).send("Need to be logged in to update user.");
+        }
+        const encryptedPassword = await user_validation_local.encryptPassword(req.body["password"]);
+        const updateQueryResult = await pool.query("UPDATE users SET email_or_id=$1, display_name=$2, website=$3, encrypted_password=$4 WHERE user_id=$5",
+            [
+                req.body["new_id"],
+                req.body["display_name"],
+                req.body["website"],
+                Buffer.from(encryptedPassword),
+                current_user_id
+            ]);
+        if (updateQueryResult.rowCount == 0) {
+            res.status(404).send(`Cannot find user with id ${current_user_id}`);
+        } else {
+            res.status(204).send();
+        }
+    } catch(err) {
+        console.log(err)
+        res.status(500).send("Internal error updating user.");
+    }
+});
+
 app.delete('/v1/user/:id', async (req, res, next) => {
     try {
         let current_user_id = null;
