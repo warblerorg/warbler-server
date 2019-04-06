@@ -1,12 +1,7 @@
-FROM postgres:10
-
-ENV POSTGRES_USER warbler
-ENV POSTGRES_DB warbler_store
+FROM ubuntu
 
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
-WORKDIR /app
-COPY . /app
-
+ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
 RUN apt-get install -y -q --no-install-recommends \
         apt-transport-https \
@@ -15,8 +10,21 @@ RUN apt-get install -y -q --no-install-recommends \
         curl \
         git \
         libssl-dev \
-        wget
+        wget \
+        postgresql-10 postgresql-client-10 postgresql-contrib-10
 
+USER postgres
+RUN    /etc/init.d/postgresql start &&\
+    psql --command "CREATE USER warbler WITH SUPERUSER;" &&\
+    createdb -O warbler warbler_store
+
+#ENV POSTGRES_USER warbler
+#ENV POSTGRES_DB warbler_store
+
+USER root
+
+WORKDIR /app
+COPY . /app
 
 RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.34.0/install.sh | bash
 
