@@ -1,6 +1,10 @@
 FROM ubuntu
 
 RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
+WORKDIR /app
+COPY . /app
+
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
 RUN apt-get install -y -q --no-install-recommends \
@@ -23,8 +27,6 @@ RUN    /etc/init.d/postgresql start &&\
 
 USER root
 
-WORKDIR /app
-COPY . /app
 
 RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.34.0/install.sh | bash
 
