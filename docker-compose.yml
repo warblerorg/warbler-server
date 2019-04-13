@@ -1,0 +1,22 @@
+version: '3'
+services:
+    web:
+        build: .
+        ports:
+        - "3000:3000"
+        volumes:
+        - .:/app
+        links:
+        - db 
+
+    db:
+        image: postgres:10
+        environment:
+        - POSTGRES_USER=warbler
+        - POSTGRES_DB=warbler_store
+        volumes:
+        - ./db_v1.sql:/docker-entrypoint-initdb.d/db_v1.sql
+        - dbdata:/var/lib/postgresql/data
+
+volumes:
+    dbdata:
