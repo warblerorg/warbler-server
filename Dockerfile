@@ -3,7 +3,6 @@ FROM node:11.14.0-stretch
 # RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 WORKDIR /app
-COPY . /app
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
@@ -17,18 +16,14 @@ RUN apt-get install -y -q --no-install-recommends \
         wget \
         postgresql-client
 
-ENV POSTGRES_USER warbler
-ENV POSTGRES_DB db:warbler_store
-
-# RUN . $HOME/.nvm/nvm.sh && nvm install $NODE_VERSION \
-#     && nvm alias default $NODE_VERSION \
-#     && nvm use default
-
-RUN npm install
-EXPOSE 3000
-
 ENV PGHOST db
 ENV PGDATABASE warbler_store
 ENV PGUSER warbler
 
+COPY package.json /app
+RUN npm install
+COPY . /app
+EXPOSE 3000
+
 CMD ["node", "index.js"]
+
