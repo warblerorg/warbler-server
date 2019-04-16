@@ -55,9 +55,10 @@ passport.deserializeUser(function(user, done) {
 
 app.get('/', async (req, res) => res.send("Hello world!"));
 
-app.get('/v1/comments/:id', async (req, res, next) => {
+app.get('/v1/comments/:thread_id/:comment_id', async (req, res, next) => {
     try {
-        const queryResult = await pool.query("SELECT * FROM comments WHERE comment_id=$1", [req.params["id"]]);
+        const queryResult = await pool.query("SELECT * FROM comments WHERE thread_id=$1 AND comment_id=$2",
+            [req.params["thread_id"], req.params["comment_id"]]);
         if (queryResult.rows.length == 0) {
             res.status(404).send({
                 "status": "error",
@@ -82,7 +83,7 @@ app.get('/v1/comments/:thread_id', async (req, res, next) => {
     }
 });
 
-app.post('/v1/comments/:thread_id', async (req, res, next) => {
+app.post('/v1/thread_comment/:thread_id', async (req, res, next) => {
     try {
         let current_user_id = null;
         if (!!req.user) {
@@ -94,7 +95,7 @@ app.post('/v1/comments/:thread_id', async (req, res, next) => {
             res.status(401).send("Unauthorized: cannot post comment as that user");
         } else {
             const queryResult = await pool.query("INSERT INTO comments(thread_id, parent_id, user_id, content)" +
-                " VALUES($1, $2, $3, $4)", 
+                " VALUES($1, $2, $3, $4)",
                 [
                     req.params["thread_id"],
                     req.body["parent_id"],
@@ -109,6 +110,7 @@ app.post('/v1/comments/:thread_id', async (req, res, next) => {
         res.status(500).send("Internal error inserting.");
     }
 });
+
 app.put('/v1/comments/:thread_id/:comment_id', async (req, res, next) => {
     try {
         let current_user_id = null;
@@ -130,6 +132,7 @@ app.put('/v1/comments/:thread_id/:comment_id', async (req, res, next) => {
         res.status(500).send("Internal error updating comment.");
     }
 });
+
 app.delete('/v1/comments/:id', async (req, res, next) => {
     try {
         const current_user_id = req.user["email_or_id"];
