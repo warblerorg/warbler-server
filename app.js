@@ -55,7 +55,7 @@ passport.deserializeUser(function(user, done) {
 
 app.get('/', async (req, res) => res.send("Hello world!"));
 
-app.get('/v1/comments/:thread_id/:comment_id', async (req, res, next) => {
+app.get('/v1/thread/:thread_id/comment/:comment_id', async (req, res, next) => {
     try {
         const queryResult = await pool.query("SELECT * FROM comments WHERE thread_id=$1 AND comment_id=$2",
             [req.params["thread_id"], req.params["comment_id"]]);
@@ -73,7 +73,7 @@ app.get('/v1/comments/:thread_id/:comment_id', async (req, res, next) => {
     }
 });
 
-app.get('/v1/comments/:thread_id', async (req, res, next) => {
+app.get('/v1/comments/thread/:thread_id/comments', async (req, res, next) => {
     try {
         const queryResult = await pool.query("SELECT * FROM comments WHERE thread_id=$1", [req.params["thread_id"]]);
         res.json(queryResult.rows);
