@@ -55,7 +55,7 @@ passport.deserializeUser(function(user, done) {
 
 app.get('/', async (req, res) => res.send("Hello world!"));
 
-app.get('/v1/thread/:thread_id/comment/:comment_id', async (req, res, next) => {
+app.get('/v1/thread/:thread_id/comments/:comment_id', async (req, res, next) => {
     try {
         const queryResult = await pool.query("SELECT * FROM comments WHERE thread_id=$1 AND comment_id=$2",
             [req.params["thread_id"], req.params["comment_id"]]);
@@ -73,7 +73,7 @@ app.get('/v1/thread/:thread_id/comment/:comment_id', async (req, res, next) => {
     }
 });
 
-app.get('/v1/comments/thread/:thread_id/comments', async (req, res, next) => {
+app.get('/v1/thread/:thread_id/comments', async (req, res, next) => {
     try {
         const queryResult = await pool.query("SELECT * FROM comments WHERE thread_id=$1", [req.params["thread_id"]]);
         res.json(queryResult.rows);
@@ -83,7 +83,7 @@ app.get('/v1/comments/thread/:thread_id/comments', async (req, res, next) => {
     }
 });
 
-app.post('/v1/thread_comment/:thread_id', async (req, res, next) => {
+app.post('/v1/thread/:thread_id/comments', async (req, res, next) => {
     try {
         let current_user_id = null;
         if (!!req.user) {
@@ -111,7 +111,7 @@ app.post('/v1/thread_comment/:thread_id', async (req, res, next) => {
     }
 });
 
-app.put('/v1/comments/:thread_id/:comment_id', async (req, res, next) => {
+app.put('/v1/thread/:thread_id/comments/:comment_id', async (req, res, next) => {
     try {
         let current_user_id = null;
         if (!!req.user) {
@@ -133,20 +133,21 @@ app.put('/v1/comments/:thread_id/:comment_id', async (req, res, next) => {
     }
 });
 
-app.delete('/v1/comments/:id', async (req, res, next) => {
+app.delete('/v1/thread/:thread_id/comments/:comment_id', async (req, res, next) => {
     try {
         const current_user_id = req.user["email_or_id"];
-        const userQueryResult = await pool.query("SELECT user_id FROM comments WHERE comment_id=$1",
-            [req.params["id"]]);
+        const userQueryResult = await pool.query("SELECT user_id FROM comments WHERE thread_id=$1 AND comment_id=$2",
+            [req.params["thread_id"], req.params["comment_id"]]);
         if (userQueryResult.rows.length == 0) {
-            res.status(404).send(`Cannot find comment with id ${req.params["id"]}`);
+            res.status(404).send(`Cannot find comment with thread_id ` +
+            `${req.params["thread_id"]} and id ${req.params["comment_id"]}`);
         } else {
             let valid_user_id = userQueryResult.rows[0]["user_id"];
             if (current_user_id != valid_user_id) {
                 res.status(401).send("Unauthorized");
             } else {
-                const deleteQueryResult = await pool.query("DELETE FROM comments WHERE comment_id=$1",
-                    [req.params["id"]]);
+                const deleteQueryResult = await pool.query("DELETE FROM comments WHERE THREAD_ID=$1 AND  comment_id=$2",
+                    [req.params["thread_id"], req.params["comment_id"]]);
                 res.status(204).send();
             }
         }
